@@ -8,8 +8,10 @@ import tensorflow as tf
 
 #Database imports
 from sqlalchemy.orm import Session
-from database.database import crud, models, schemas
-from .database import SessionLocal, engine
+
+from database.database import SessionLocal, engine
+from database import crud, models, schemas
+
 
 #Dependency
 def get_db():
