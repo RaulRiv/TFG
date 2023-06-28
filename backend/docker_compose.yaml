@@ -1,0 +1,10 @@
+version: '3'
+services:
+  your-service-name:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - 8000:8000
+    volumes:
+      - /path/to/your-database.db:/app/your-database.db
