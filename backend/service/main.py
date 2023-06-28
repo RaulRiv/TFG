@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 
 from database.database import SessionLocal, engine
 from database import crud, models, schemas
-
+from .tweet_processor import TweetProcessor
 
 #Dependency
 def get_db():
@@ -21,14 +21,19 @@ def get_db():
     finally:
         db.close()
 
-#Load the model that we previously exported from the notebook
-MODEL = tf.keras.models.load_model('./model/')
 
 #Config and launch FastAPI app
 logging.basicConfig(level=logging.INFO)
 app = FastAPI(
     title = "Twit depression detector"
 )
+
+#Initialize model on server start
+model = None
+@app.on_event("startup")
+def startup_event():
+    global model
+    model = TweetProcessor.load_model()
 
 """
 Endpoints
@@ -37,7 +42,7 @@ Endpoints
 @app.get("/")
 def ping(): 
     print("ping de print")
-    logging.info("Ping de logging")
+    logging.info("Logging de ping")
     return starlette.status.HTTP_200_OK
 
 @app.get("/version")
@@ -47,10 +52,9 @@ def get_version():
 
 @app.get("/model-info", tags=["Model"])
 def get_model_info():
-    summary_str = []
-    MODEL.summary(print_fn=lambda x: summary_str.append(x))
-    return {"summary": summary_str}
+    return TweetProcessor.model_info()
 
+# Store, process and make a prediction with a given tweet
 @app.post("/tweet", tags=["Evaluation"], response_model=schemas.Tweet)
 def post_tweet(tweet: schemas.TweetCreate, db: Session = Depends(get_db)):
     logging.info("Storing tweet")
@@ -61,9 +65,10 @@ def post_tweet(tweet: schemas.TweetCreate, db: Session = Depends(get_db)):
         logging.info("Tweet already exists")
         #raise HTTPException(status_code=400, detail="Tweet already stored")
     crud.create_tweet(db=db, tweet=tweet)
-    logging.info("Predicting: \n")
-    #prediction = MODEL.predict(processed_tweet)
-    return 
+    logging.info("Predicting... \n")
+    processed_tweet = TweetProcessor.pre_process_tweet([tweet.message])
+    prediction = TweetProcessor.predict_tweet(processed_tweet)
+    return prediction
 
 # https://machinelearningmastery.com/update-neural-network-models-with-more-data/
 # https://fastapi.tiangolo.com/tutorial/sql-databases/
