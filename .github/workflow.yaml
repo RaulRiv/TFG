@@ -2,7 +2,7 @@ name: Deploy with SSH and Docker Compose
 on:
   push:
     branches:
-      - main
+      - production
     paths:
       - 'backend/**'
       
