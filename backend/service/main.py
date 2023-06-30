@@ -8,14 +8,12 @@ import tensorflow as tf
 
 #Database imports
 from sqlalchemy.orm import Session
-
-from database.database import SessionLocal, engine
-from database import crud, models, schemas
+from database import crud, schemas, database
 from .tweet_processor import TweetProcessor
 
 #Dependency
 def get_db():
-    db = SessionLocal()
+    db = database.SessionLocal()
     try:
         yield db
     finally:
@@ -45,7 +43,7 @@ def ping():
     logging.info("Logging de ping")
     return starlette.status.HTTP_200_OK
 
-@app.get("/version")
+@app.get("/version", tags=["Model"])
 def get_version():
     print('{"version": "0.1"}')
     return [{"version": "0.1"}]
@@ -61,9 +59,8 @@ def post_tweet(tweet: schemas.TweetCreate, db: Session = Depends(get_db)):
     ## store the tweet here
     db_tweet = crud.get_tweet_by_id(db, id=tweet.id)
     if db_tweet:
-        ## I should manage this scenario, do I want dupes?
         logging.info("Tweet already exists")
-        #raise HTTPException(status_code=400, detail="Tweet already stored")
+        raise HTTPException(status_code=400, detail="Tweet already stored")
     crud.create_tweet(db=db, tweet=tweet)
     logging.info("Predicting... \n")
     processed_tweet = TweetProcessor.pre_process_tweet([tweet.message])

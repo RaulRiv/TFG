@@ -7,4 +7,4 @@ services:
     ports:
       - 8000:8000
     volumes:
-      - /path/to/your-database.db:/app/your-database.db
+      - database/database.db:/app/database.db
